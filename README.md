@@ -1,49 +1,31 @@
-# Servicio de préstamos de equipos de laboratorio
+# Préstamos de laboratorio
 
-API con FastAPI y SQLModel. Se puede ejecutar localmente con `uv` o en contenedores con Docker Compose y PostgreSQL 18.
+API de préstamo de equipos hecha con FastAPI y SQLModel.
 
-## Arranque local
+## Correr local
 
-```bash
-uv sync
-uv run uvicorn prestamos.servidor:app --port 9000
-```
+    uv sync
+    uv run uvicorn prestamos.servidor:app --port 9000
 
-`uv sync` crea el entorno `.venv` con las versiones exactas de `uv.lock`, incluidas las de desarrollo. `requirements.txt` lista solo las dependencias de ejecución, para quien instale con `pip`.
-
-Sin `PRESTAMOS_DB_URL`, la app usa SQLite en `datos/prestamos.db` y crea la carpeta `datos/` al arrancar.
+Si no se define PRESTAMOS_DB_URL usa SQLite en datos/prestamos.db (crea la carpeta sola).
 
 ## Pruebas
 
-```bash
-uv run pytest
-```
+    uv run pytest
 
 ## Docker
 
-Imagen de producción (multietapa, usuario no root, `HEALTHCHECK` sobre `/salud`):
+    docker build -t prestamos .
+    docker run -p 9000:9000 prestamos
 
-```bash
-docker build -t prestamos .
-docker run --rm -p 9000:9000 prestamos
-```
+## Con postgres
 
-Sin variables de entorno, el contenedor usa SQLite en `/app/datos/prestamos.db`.
+    docker compose up -d --build
 
-## Docker Compose con PostgreSQL
+Levanta la app y postgres 18. La app espera a que la base esté healthy. Los datos quedan en el volumen pgdata, así que `docker compose down` no los borra pero `docker compose down -v` sí.
 
-```bash
-docker compose up -d --build   # levanta app y PostgreSQL 18
-docker compose ps              # ambos servicios quedan healthy
-docker compose down            # conserva los datos (volumen pgdata)
-docker compose down -v         # borra también los datos
-```
+## URLs
 
-`PRESTAMOS_DB_URL` se define en `compose.yaml` y apunta al servicio `db`. La app espera a que PostgreSQL esté `healthy` (`pg_isready`) antes de arrancar. Los datos viven en el volumen nombrado `pgdata`, montado en `/var/lib/postgresql`.
-
-## URL
-
-- Salud: <http://127.0.0.1:9000/salud> → `{"estado":"ok"}`
-- Motor en uso: <http://127.0.0.1:9000/diagnostico> → `{"motor":"sqlite"}` o `{"motor":"postgresql"}`
-- Documentación interactiva: <http://127.0.0.1:9000/docs>
-- Registro y listado: `POST` y `GET` en <http://127.0.0.1:9000/prestamos>, con cuerpo `{"equipo": "...", "solicitante": "..."}`
+- http://localhost:9000/salud
+- http://localhost:9000/diagnostico (dice sqlite o postgresql)
+- http://localhost:9000/prestamos (GET y POST, con {"equipo": "...", "solicitante": "..."})
